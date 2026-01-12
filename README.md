@@ -1,24 +1,21 @@
 # 專案研究報告：ET-BERT 與通用 LLM 在加密流量分析之比較
-**Comparative Study: ET-BERT vs. General LLMs for Encrypted Traffic Analysis**
-
 ---
-
-## 1. 摘要 (Abstract)
+## 1. 摘要
 隨著傳輸層安全性協定 (TLS 1.3) 的普及，傳統深度封包檢測 (DPI) 已無法有效識別惡意流量。本報告對比了兩種主流的 AI 解決方案：**領域專用模型 ET-BERT** 與 **通用大型語言模型 (General LLMs)**。分析顯示，雖然通用 LLM 在文本理解上表現卓越，但在處理原始網路封包 (Raw PCAP/Hex) 時，ET-BERT 憑藉其專用的 **分詞策略 (Tokenization)** 與 **雙向編碼架構 (Bi-directional Encoder)**，在識別遠端存取工具 (RATs) 與 C2 通訊特徵上展現出更高的效率與準確度。
 
 ---
 
-## 2. 模型架構與原理比較 (Architecture & Mechanism)
+## 2. 模型架構與原理比較
 
 在加密流量分析的場景中，這兩種模型的根本差異在於它們「如何閱讀」與「如何理解」封包數據。
 
-### 2.1 ET-BERT (Encrypted Traffic BERT)
+### 2.1 ET-BERT 
 * **本質：** 屬於 **Encoder-only** 架構（基於 BERT）。
 * **核心邏輯：** 專為「理解與分類」設計。它將網路封包的 Hex 序列視為一種「外星語言」，並試圖理解其文法結構。
 * **分詞方式 (Tokenization)：** 採用 **Burst-based** 策略。它通常將兩個 Hex 字符（如 `ff`）視為一個 Token（即 1 Byte = 1 Token）。這與計算機網路的最小單位（Byte）完美對齊。
 * **注意力機制：** **雙向注意力 (Bi-directional Attention)**。模型在判斷某個 Byte 的意義時，會同時參考它「前面」與「後面」的 Byte。這對於理解加密握手 (Handshake) 的完整上下文至關重要。
 
-### 2.2 通用 LLM (General Large Language Models)
+### 2.2 通用 LLM 
 * **本質：** 大多屬於 **Decoder-only** 架構（如 GPT 系列）或 Encoder-Decoder 架構。
 * **核心邏輯：** 專為「生成與接龍」設計。它們主要學習的是人類自然語言（英語、程式碼）的概率分佈。
 * **分詞方式 (Tokenization)：** 採用 **BPE (Byte Pair Encoding)** 或 WordPiece。這在處理 Hex 數據時效率極低，例如 `a1b2` 可能被切分成不規則的片段，破壞了網路協定的結構完整性。
@@ -40,7 +37,7 @@
 * **ET-BERT 優勢：** 擅長處理 **Sequence Classification**（序列分類）。即使 Payload 被加密，ET-BERT 也能偵測到特定的 TLS Client Hello 指紋 (JA3 fingerprints) 變體，這是勒索軟體的典型特徵。
 * **LLM 劣勢：** 勒索軟體流量屬於「少樣本 (Few-shot)」場景。通用 LLM 需要大量的 Context Window 來放入 Hex 數據，且容易產生幻覺 (Hallucination)，誤將正常的加密備份流量判讀為勒索行為。
 
-### 3.3 Cobalt Strike (C2 & Malleable Profiles)
+### 3.3 Cobalt Strike 
 * **特徵：** Cobalt Strike 最強大的功能是 Malleable C2，可以偽裝成 Google、Amazon 的流量。
 * **ET-BERT 優勢：** **這是不實作比較中的決勝點。** 攻擊者可以偽裝統計特徵（改封包大小、時間），但很難完全偽裝協定的「深層語言結構」。ET-BERT 透過 Masked Language Modeling (MLM) 訓練，能發現那些「看起來像 Google 但文法怪怪的」封包序列，進而識破偽裝。
 * **LLM 劣勢：** LLM 更擅長語義層面的分析（例如分析 HTTP Log 中的 User-Agent 字串），但面對純粹的加密二進位流 (Encrypted Binary Stream)，LLM 的推理能力會大幅下降。
@@ -61,7 +58,7 @@
 
 ---
 
-## 5. 結論與建議 (Conclusion)
+## 5. 結論與建議
 
 ### 5.1 結論
 在 **加密流量分類 (Encrypted Traffic Classification)** 這一具體任務上，**ET-BERT 顯著優於通用 LLM**。
